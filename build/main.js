@@ -199,7 +199,7 @@ server.listen(PORT).then(({
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(/*! /Users/nikita/js/tests/todo-webpack/server/src/index.js */"./src/index.js");
+module.exports = __webpack_require__(/*! /Users/nikita/js/tests/todo-webpack-server/src/index.js */"./src/index.js");
 
 
 /***/ }),
