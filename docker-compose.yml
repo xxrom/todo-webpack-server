@@ -1,0 +1,19 @@
+version: '3.3'
+
+services:
+  # nikita-redis:
+  #   image: redis:4-alpine
+
+  todo-list_server_0:
+    build: ./
+    # depends_on:
+    #   - nikita-redis
+    # links:
+    #   - nikita-redis
+    volumes:
+      - ./src/:/usr/bin/backend/src/
+    ports:
+      - '4001:4000'
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_HOST=nikita-redis
