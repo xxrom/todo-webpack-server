@@ -97,20 +97,26 @@ module.exports =
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var apollo_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! apollo-server */ "apollo-server");
-/* harmony import */ var apollo_server__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(apollo_server__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var dotenv__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! dotenv */ "dotenv");
-/* harmony import */ var dotenv__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(dotenv__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! axios */ "axios");
-/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var apollo_server_koa__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! apollo-server-koa */ "apollo-server-koa");
+/* harmony import */ var apollo_server_koa__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(apollo_server_koa__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var koa__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! koa */ "koa");
+/* harmony import */ var koa__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(koa__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var koa_morgan__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! koa-morgan */ "koa-morgan");
+/* harmony import */ var koa_morgan__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(koa_morgan__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var dotenv__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! dotenv */ "dotenv");
+/* harmony import */ var dotenv__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(dotenv__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! axios */ "axios");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_4__);
 // import express from 'express';
 // import expressGraphQL from 'express-graphql';
 // import { buildSchema } from 'graphql';
 
 
 
-dotenv__WEBPACK_IMPORTED_MODULE_1___default.a.config();
-const typeDefs = apollo_server__WEBPACK_IMPORTED_MODULE_0__["gql"]`
+
+
+dotenv__WEBPACK_IMPORTED_MODULE_3___default.a.config();
+const typeDefs = apollo_server_koa__WEBPACK_IMPORTED_MODULE_0__["gql"]`
   # Comments in GraphQL are defined with the hash (#) symbol.
 
   # This "Book" type can be used in other type declarations.
@@ -132,6 +138,17 @@ const typeDefs = apollo_server__WEBPACK_IMPORTED_MODULE_0__["gql"]`
 
     todo: [TodoItem]
   }
+
+  type Mutation {
+    replaceTasks(tasks: [TaskInput!]!): [Task!]!
+  }
+
+  input TaskInput {
+    name: String
+  }
+  type Task {
+    name: String
+  }
 `;
 const books = [{
   title: 'Harry Potter and the Chamber of Secrets',
@@ -145,20 +162,55 @@ const resolvers = {
   Query: {
     books: () => books,
     hello: () => 'hello',
-    todo: () => axios__WEBPACK_IMPORTED_MODULE_2___default.a.get('http://localhost:3000/todo').then(res => res.data).catch(err => {
+    todo: () => axios__WEBPACK_IMPORTED_MODULE_4___default.a.get('http://localhost:3000/todo').then(res => res.data).catch(err => {
       console.error(err);
       return 'error';
     })
+  },
+  Mutation: {
+    replaceTasks: async (root, args, context) => {
+      console.log('root', root);
+      console.log('args', args);
+      console.log('context', context);
+      const tasks = args.tasks;
+
+      if (!tasks) {
+        return;
+      }
+
+      const endDeleting = await axios__WEBPACK_IMPORTED_MODULE_4___default.a.get('http://localhost:3000/todo').then(res => {
+        console.log(res.data);
+        const tasks = res.data;
+        tasks.map(({
+          id
+        }) => {
+          console.log(`delete by id ${id}`);
+          axios__WEBPACK_IMPORTED_MODULE_4___default.a.delete(`http://localhost:3000/todo/${id}`);
+        });
+        return 'end deleting';
+      }).catch(err => console.error('endDeleting error', err));
+      console.log('endDeleting', endDeleting);
+      args.tasks.map(task => axios__WEBPACK_IMPORTED_MODULE_4___default.a.post('http://localhost:3000/todo', task).then(res => {
+        console.log('new tasks', res.data);
+        return res.data;
+      }).catch(err => {
+        console.error('putTodo error', err);
+        return 'error';
+      }));
+      conosle.log('putTodo', putTodo);
+    }
   }
 };
-const server = new apollo_server__WEBPACK_IMPORTED_MODULE_0__["ApolloServer"]({
+const app = new koa__WEBPACK_IMPORTED_MODULE_1___default.a();
+const server = new apollo_server_koa__WEBPACK_IMPORTED_MODULE_0__["ApolloServer"]({
   typeDefs,
   resolvers
 });
-server.listen(PORT).then(({
-  url
-}) => {
-  console.log(`🚀  Server ready at ${url}`);
+server.applyMiddleware({
+  app
+});
+app.use(koa_morgan__WEBPACK_IMPORTED_MODULE_2___default()('tiny')).listen(PORT, () => {
+  console.log(`🚀  Server ready at ${PORT}`);
 }); // Construct a schema, using GraphQL schema language
 // var schema = buildSchema(`
 //   type Query {
@@ -204,14 +256,14 @@ module.exports = __webpack_require__(/*! /Users/nikita/js/tests/todo-webpack-ser
 
 /***/ }),
 
-/***/ "apollo-server":
-/*!********************************!*\
-  !*** external "apollo-server" ***!
-  \********************************/
+/***/ "apollo-server-koa":
+/*!************************************!*\
+  !*** external "apollo-server-koa" ***!
+  \************************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = require("apollo-server");
+module.exports = require("apollo-server-koa");
 
 /***/ }),
 
@@ -234,6 +286,28 @@ module.exports = require("axios");
 /***/ (function(module, exports) {
 
 module.exports = require("dotenv");
+
+/***/ }),
+
+/***/ "koa":
+/*!**********************!*\
+  !*** external "koa" ***!
+  \**********************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("koa");
+
+/***/ }),
+
+/***/ "koa-morgan":
+/*!*****************************!*\
+  !*** external "koa-morgan" ***!
+  \*****************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("koa-morgan");
 
 /***/ })
 

@@ -2,8 +2,9 @@
 // import expressGraphQL from 'express-graphql';
 // import { buildSchema } from 'graphql';
 
-import { ApolloServer, gql } from 'apollo-server';
-
+import { ApolloServer, gql } from 'apollo-server-koa';
+import Koa from 'koa';
+import morgan from 'koa-morgan';
 import env from 'dotenv';
 import axios from 'axios';
 
@@ -30,6 +31,17 @@ const typeDefs = gql`
 
     todo: [TodoItem]
   }
+
+  type Mutation {
+    replaceTasks(tasks: [TaskInput!]!): [Task!]!
+  }
+
+  input TaskInput {
+    name: String
+  }
+  type Task {
+    name: String
+  }
 `;
 const books = [
   {
@@ -55,10 +67,61 @@ const resolvers = {
           return 'error';
         }),
   },
+  Mutation: {
+    replaceTasks: async (root, args, context) => {
+      console.log('root', root);
+      console.log('args', args);
+      console.log('context', context);
+      const tasks = args.tasks;
+
+      if (!tasks) {
+        return;
+      }
+
+      const endDeleting = await axios
+        .get('http://localhost:3000/todo')
+        .then((res) => {
+          console.log(res.data);
+          const tasks = res.data;
+
+          tasks.map(({ id }) => {
+            console.log(`delete by id ${id}`);
+            axios.delete(`http://localhost:3000/todo/${id}`);
+          });
+          return 'end deleting';
+        })
+        .catch((err) => console.error('endDeleting error', err));
+      console.log('endDeleting', endDeleting);
+
+      args.tasks.map((task) =>
+        axios
+          .post('http://localhost:3000/todo', task)
+          .then((res) => {
+            console.log('new tasks', res.data);
+            return res.data;
+          })
+          .catch((err) => {
+            console.error('putTodo error', err);
+            return 'error';
+          })
+      );
+      conosle.log('putTodo', putTodo);
+    },
+  },
 };
-const server = new ApolloServer({ typeDefs, resolvers });
-server.listen(PORT).then(({ url }) => {
-  console.log(`🚀  Server ready at ${url}`);
+
+const app = new Koa();
+
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+});
+server.applyMiddleware({
+  app,
+});
+
+app.use(morgan('tiny')).listen(PORT, () => {
+  console.log(`🚀  Server ready at ${PORT}`);
 });
 
 // Construct a schema, using GraphQL schema language
