@@ -190,14 +190,15 @@ const resolvers = {
         return 'end deleting';
       }).catch(err => console.error('endDeleting error', err));
       console.log('endDeleting', endDeleting);
-      args.tasks.map(task => axios__WEBPACK_IMPORTED_MODULE_4___default.a.post('http://localhost:3000/todo', task).then(res => {
+      const putTodo = await Promise.all(args.tasks.map(task => axios__WEBPACK_IMPORTED_MODULE_4___default.a.post('http://localhost:3000/todo', task).then(res => {
         console.log('new tasks', res.data);
         return res.data;
       }).catch(err => {
         console.error('putTodo error', err);
         return 'error';
-      }));
-      conosle.log('putTodo', putTodo);
+      })));
+      console.log('putTodo', putTodo);
+      return tasks;
     }
   }
 };
