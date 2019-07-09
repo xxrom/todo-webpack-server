@@ -1,7 +1,3 @@
-// import express from 'express';
-// import expressGraphQL from 'express-graphql';
-// import { buildSchema } from 'graphql';
-
 import { ApolloServer, gql } from 'apollo-server-koa';
 import Koa from 'koa';
 import morgan from 'koa-morgan';
@@ -34,13 +30,23 @@ const typeDefs = gql`
 
   type Mutation {
     replaceTasks(tasks: [TaskInput!]!): [Task!]!
+    addTask(task: TaskInput): TaskReturn!
+    deleteTask(id: ID): DeleteId
   }
 
   input TaskInput {
     name: String
   }
+
   type Task {
     name: String
+  }
+  type TaskReturn {
+    id: ID
+    name: String
+  }
+  type DeleteId {
+    id: String
   }
 `;
 const books = [
@@ -68,6 +74,23 @@ const resolvers = {
         }),
   },
   Mutation: {
+    addTask: async (root, args, context) => {
+      console.log('data', args);
+      const {
+        task: { name },
+      } = args;
+      console.log('addTask ', name);
+
+      const endAdding = await axios
+        .post('http://localhost:3000/todo', { name })
+        .then((res) => {
+          console.log(res.data);
+          return res.data;
+        })
+        .catch((err) => console.error('Error', err));
+      console.log('endAdding', endAdding);
+      return endAdding;
+    },
     replaceTasks: async (root, args, context) => {
       console.log('root', root);
       console.log('args', args);
@@ -111,6 +134,27 @@ const resolvers = {
 
       return tasks;
     },
+    deleteTask: async (root, args, context) => {
+      // console.log('root', root);
+      console.log('args', args);
+      // console.log('context', context);
+      const { id } = args;
+
+      if (!id) {
+        return;
+      }
+
+      const endDeleting = await axios
+        .delete(`http://localhost:3000/todo/${id}`)
+        .then((res) => {
+          console.log('deleted res', res);
+          return res.data;
+        })
+        .catch((err) => console.error(err));
+
+      console.log('endDeleting', endDeleting);
+      return args;
+    },
   },
 };
 
@@ -127,36 +171,3 @@ server.applyMiddleware({
 app.use(morgan('tiny')).listen(PORT, () => {
   console.log(`🚀  Server ready at ${PORT}`);
 });
-
-// Construct a schema, using GraphQL schema language
-// var schema = buildSchema(`
-//   type Query {
-//     hello: String
-//   }
-// `);
-
-// The root provides a resolver function for each API endpoint
-// const root = {
-//   hello: () => {
-//     return 'Hello';
-//   },
-// axios
-//   .get('http://localhost:3000/todo')
-//   .then((res) => res.data)
-//   .catch((err) => {
-//     console.error(err);
-//     return 'error';
-//   }),
-// };
-
-// const app = express();
-// app.use(
-//   '/graphql',
-//   expressGraphQL({
-//     schema: schema,
-//     rootValue: root,
-//     graphql: true,
-//   }),
-// );
-// app.listen(PORT);
-// console.log(`Running a GraphQL API server at localhost:${PORT}/graphql`);
